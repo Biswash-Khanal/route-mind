@@ -1,26 +1,168 @@
 @import "tailwindcss";
 
+/* 1. Design Tokens */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color Palette Roles */
+  --paper: #f7f6f2; /* Backgrounds, containers, surfaces */
+  --ink: #1b1f24; /* Primary text, icons, headings */
+  --slate: #4b5565; /* Secondary text, borders, dividers */
+  --mist: #e2e5e9; /* Subtle surfaces, hover states */
+  --stone: #c7ccd3; /* Disabled states, placeholders */
+
+  /* Application Accents */
+  --transit-500: #0b5fff;
+  --transit-400: #3b82f6;
+  --transit-200: #93c5fd;
+
+  --walk-500: #10b981;
+  --walk-400: #34d399;
+  --walk-200: #a7f3dd;
+
+  /* Typography Scale */
+  --size-h1: 2rem; /* 32px */
+  --size-h2: 1.5rem; /* 24px */
+  --size-h3: 1.125rem; /* 18px */
+  --size-body: 1rem; /* 16px */
+  --size-small: 0.875rem; /* 14px */
+  --size-caption: 0.75rem; /* 12px */
+
+  /* Line Heights */
+  --lh-h1: 2.5rem; /* 40px */
+  --lh-h2: 2rem; /* 32px */
+  --lh-h3: 1.625rem; /* 26px */
+  --lh-body: 1.5rem; /* 24px */
+  --lh-small: 1.25rem; /* 20px */
+  --lh-caption: 1rem; /* 16px */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* 2. Tailwind v4 Registration */
+@theme {
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+
+  /* Global Theme Shortcuts */
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-slate: var(--slate);
+  --color-mist: var(--mist);
+  --color-stone: var(--stone);
+
+  --color-transit-500: var(--transit-500);
+  --color-transit-400: var(--transit-400);
+  --color-transit-200: var(--transit-200);
+
+  --color-walk-500: var(--walk-500);
+  --color-walk-400: var(--walk-400);
+  --color-walk-200: var(--walk-200);
+
+  /* Font Utilities */
+  --text-h1: var(--size-h1) / var(--lh-h1);
+  --text-h2: var(--size-h2) / var(--lh-h2);
+  --text-h3: var(--size-h3) / var(--lh-h3);
+  --text-body: var(--size-body) / var(--lh-body);
+  --text-small: var(--size-small) / var(--lh-small);
+  --text-caption: var(--size-caption) / var(--lh-caption);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* 3. Base Styles Mapping System Roles */
+@layer base {
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.5;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Headings (Primary Ink) */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--ink);
+  }
+
+  h1 {
+    font-size: var(--size-h1);
+    line-height: var(--lh-h1);
+    font-weight: 600;
+  }
+
+  h2 {
+    font-size: var(--size-h2);
+    line-height: var(--lh-h2);
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: var(--size-h3);
+    line-height: var(--lh-h3);
+    font-weight: 500;
+  }
+
+  /* Primary Body Text & List Content */
+  p,
+  li,
+  td {
+    font-size: var(--size-body);
+    line-height: var(--lh-body);
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  /* Secondary UI Text & Interface Elements */
+  small,
+  label,
+  th {
+    font-size: var(--size-small);
+    line-height: var(--lh-small);
+    font-weight: 400;
+    color: var(--slate);
+  }
+
+  /* Fine Print & Captions */
+  caption,
+  figcaption,
+  .caption {
+    font-size: var(--size-caption);
+    line-height: var(--lh-caption);
+    font-weight: 500;
+    color: var(--slate);
+  }
+
+  /* Global Borders & Dividers */
+  hr,
+  border-default {
+    border-color: var(--slate);
+  }
+
+  /* Form Placeholders */
+  ::placeholder {
+    color: var(--stone);
+    opacity: 1;
+  }
+
+  /* Disabled State Defaults */
+  :disabled,
+  [disabled] {
+    color: var(--stone);
+    cursor: not-allowed;
+  }
+
+  /* Links */
+  a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  a:hover {
+    color: var(--slate);
+  }
+
+  code,
+  pre {
+    font-family: var(--font-mono);
+  }
 }
