@@ -87,18 +87,23 @@
     font-size: var(--size-h1);
     line-height: var(--lh-h1);
     font-weight: 600;
+    letter-spacing: -0.050rem;
   }
 
   h2 {
     font-size: var(--size-h2);
     line-height: var(--lh-h2);
     font-weight: 600;
+    letter-spacing: -0.040rem;
+    
   }
 
   h3 {
     font-size: var(--size-h3);
     line-height: var(--lh-h3);
     font-weight: 500;
+    letter-spacing: -0.030rem;
+
   }
 
   /* Primary Body Text & List Content */
@@ -108,7 +113,9 @@
     font-size: var(--size-body);
     line-height: var(--lh-body);
     font-weight: 400;
-    color: var(--ink);
+    color: var(--slate);
+    letter-spacing: +0.040rem;
+
   }
 
   /* Secondary UI Text & Interface Elements */
