@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import LayoutWrapper from "./components/LayoutWrapper";
+import { ReactNode } from "react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -17,7 +18,11 @@ export const metadata: Metadata = {
   description: "Find your way around town",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+interface LayoutProps {
+children:ReactNode
+}
+
+export default function RootLayout({ children }: LayoutProps) {
   return (
     <html
       lang="en"
