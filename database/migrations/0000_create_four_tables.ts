@@ -1,11 +1,5 @@
 import { Kysely, sql } from "kysely";
 
-const TABLES_WITH_UPDATED_AT = [
-  "stops",
-  "routes",
-  "route_stops",
-  "route_shape_points",
-] as const;
 
 export async function up(db: Kysely<any>): Promise<void> {
   // 1. Create Tables
@@ -71,27 +65,11 @@ export async function up(db: Kysely<any>): Promise<void> {
     ])
     .execute();
 
-  // 2. Create Triggers (Iterative Loop)
-  for (const table of TABLES_WITH_UPDATED_AT) {
-    await sql`
-      CREATE TRIGGER IF NOT EXISTS ${sql.raw(`set_${table}_updated_at`)}
-      BEFORE UPDATE ON ${sql.raw(table)}
-      FOR EACH ROW
-      WHEN OLD.updated_at IS NEW.updated_at OR NEW.updated_at IS NULL
-      BEGIN
-        UPDATE ${sql.raw(table)}
-        SET updated_at = CURRENT_TIMESTAMP
-        WHERE id = OLD.id;
-      END;
-    `.execute(db);
-  }
+
 }
 
 export async function down(db: Kysely<any>): Promise<void> {
-  // 1. Drop Triggers First
-  for (const table of TABLES_WITH_UPDATED_AT) {
-    await sql`DROP TRIGGER IF EXISTS ${sql.raw(`set_${table}_updated_at`)};`.execute(db);
-  }
+
 
   // 2. Drop Tables in Reverse Order of Foreign Key Dependencies
   await db.schema.dropTable("route_shape_points").execute();

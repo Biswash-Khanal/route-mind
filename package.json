@@ -11,6 +11,8 @@
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
     "@libsql/kysely-libsql": "^0.4.1",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
     "kysely": "^0.29.5",
     "lucide-react": "^1.45.0",
     "next": "16.3.4",
@@ -21,11 +23,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "kysely-codegen": "^0.20.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
@@ -35,6 +39,7 @@
     "unrs-resolver"
   ],
   "trustedDependencies": [
+    "bcrypt",
     "sharp",
     "unrs-resolver"
   ]
