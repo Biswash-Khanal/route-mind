@@ -37,4 +37,7 @@ export const passwordSchema = z
     error: "Password needs to contain at least one special character.",
   });
 
-export const emailSchema = z.email("Needs to be a valid email.").trim().toLowerCase();
+export const emailSchema = z
+  .email("Needs to be a valid email.")
+  .trim()
+  .toLowerCase();

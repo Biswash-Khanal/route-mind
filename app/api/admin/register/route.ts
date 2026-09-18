@@ -1,23 +1,24 @@
-import { db } from "@/database";
-import { registerAdmin } from "@/services/adminService";
-import { adminRegisterSchema } from "@/shared/schemas/adminRegisterSchema";
-import { errorResponse, successResponse } from "@/utilities/apiResponse";
-
 import { NextRequest } from "next/server";
-import z, { safeParse } from "zod";
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const parsedData = adminRegisterSchema.safeParse(body);
+import { registerAdmin } from "@/services/adminService";
+import { adminRegisterSchema } from "@/shared/schemas/adminSchema";
+import { withErrorHandling } from "@/utilities/apiRoute";
+import { successResponse } from "@/utilities/apiResponse";
 
-    if (!parsedData.success) {
-      return errorResponse(z.prettifyError(parsedData.error));
-    }
+/**
+ * POST /api/admin/register — create a new admin.
+ *
+ * The route only says WHAT to do; it never handles failure itself:
+ *   - bad JSON body        -> wrapper returns 400
+ *   - zod validation fail  -> `parse` throws -> wrapper returns 422 + field map
+ *   - ApiError from service-> wrapper returns its status/code/message
+ *   - anything unexpected  -> wrapper logs and returns a generic 500
+ */
+export const POST = withErrorHandling(async (req: NextRequest) => {
+  const body = await req.json();
+  const data = adminRegisterSchema.parse(body);
 
-    //databse logic, check for conflicting usernames, emails and if everything is fine, insert and return success
-    return registerAdmin(parsedData.data);
-  } catch (error) {
-    return errorResponse("error");
-  }
-}
+  const created = await registerAdmin(data);
+
+  return successResponse(created, "Admin created successfully", 201);
+});

@@ -1,28 +1,39 @@
 import { NextResponse } from "next/server";
 
-interface ApiResponse<T> {
-  success: boolean;     //true or false
-  statusCode: number;   //http status code
-  message?: string;   // human readable summary of the response/ optional
-  code?: string;      // machine-readable error/success code / optional
-  data?: T;           // payload for success
-  error?: string | object; // payload for error. Can be stringified, or an error object/custom shape
-  details?: unknown;  // optional extra info (validation errors, stack trace in dev)
-  timestamp: string;  // ISO timestamp for debugging
-};
+/**
+ * Response contract shared by every API endpoint.
+ *
+ * Every response looks like this (with `data` on success or `details` on
+ * error, never both in practice):
+ *
+ *   {
+ *     success:  boolean   // did the operation succeed?
+ *     code:     string    // stable machine-readable identifier ("SUCCESS", "CONFLICT", ...)
+ *     message:  string    // human-readable string safe to show to users
+ *     data?:    unknown   // success payload
+ *     details?: unknown   // structured error extras (e.g. zod field errors)
+ *     timestamp: string   // ISO time, for debugging/correlation
+ *   }
+ *
+ * Deliberate design choices:
+ *   - `statusCode` is NOT duplicated in the body — the HTTP status already
+ *     carries it, so the two can never drift apart.
+ *   - Error internals (stacks, DB messages, zod `input`) never reach the body;
+ *     those go to the log only (see normalizeErrorForLog in apiRoute.ts).
+ */
 
-
-function baseResponse<T>(
-  payload: Partial<ApiResponse<T>>,
-  status: number
+function baseResponse(
+  payload: { success: boolean; code: string; message: string },
+  status: number,
+  extra?: { data?: unknown; details?: unknown },
 ): NextResponse {
   return NextResponse.json(
     {
       timestamp: new Date().toISOString(),
-      statusCode: status,
       ...payload,
+      ...extra,
     },
-    { status }
+    { status },
   );
 }
 
@@ -30,41 +41,24 @@ export function successResponse<T>(
   data: T,
   message = "OK",
   status = 200,
-  code = "SUCCESS"
+  code = "SUCCESS",
 ): NextResponse {
-  return baseResponse<T>({ success: true, data, message, code }, status);
+  return baseResponse(
+    { success: true, code, message },
+    status,
+    { data },
+  );
 }
 
 export function errorResponse(
-  message: string | object,
+  message: string,
   status = 400,
   code = "ERROR",
-  details?: unknown
+  details?: unknown,
 ): NextResponse {
-  return baseResponse({ success: false, error: message, message: String(message), code, details }, status);
-}
-
-export function notFoundResponse(resource = "Resource"): NextResponse {
-  return errorResponse(`${resource} not found`, 404, "NOT_FOUND");
-}
-
-export function unauthorizedResponse(reason = "Unauthorized"): NextResponse {
-  return errorResponse(reason, 401, "UNAUTHORIZED");
-}
-
-export function forbiddenResponse(reason = "Forbidden"): NextResponse {
-  return errorResponse(reason, 403, "FORBIDDEN");
-}
-
-export function conflictResponse(resource = "Resource"): NextResponse {
-  return errorResponse(`${resource} already exists`, 409, "CONFLICT");
-}
-
-export function validationErrorResponse(errors: object): NextResponse {
-  return errorResponse("Validation failed", 422, "VALIDATION_ERROR", errors);
-}
-
-export function serverErrorResponse(error?: unknown): NextResponse {
-  console.error("Server error:", error);
-  return errorResponse("Internal server error", 500, "SERVER_ERROR");
+  return baseResponse(
+    { success: false, code, message },
+    status,
+    details !== undefined ? { details } : undefined,
+  );
 }

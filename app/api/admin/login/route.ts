@@ -1,8 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
-export async function POST(request:NextRequest) {
+import { LoggedInAdminWithToken, loginAdmin } from "@/services/adminService";
+import { adminLoginSchema } from "@/shared/schemas/adminSchema";
+import { withErrorHandling } from "@/utilities/apiRoute";
+import { successResponse } from "@/utilities/apiResponse";
+import { setAuthCookie } from "@/utilities/cookieHelpers";
 
-    console.log("Hi you just hit the get request");
-    return Response.json({success:true, data:"hi"});
-    
-}
+export const POST = withErrorHandling(async (req: NextRequest) => {
+  const body = await req.json();
+  const data = adminLoginSchema.parse(body);
+
+  const loggedInAdmin: LoggedInAdminWithToken = await loginAdmin(data);
+
+  const response = successResponse(
+    loggedInAdmin.admin,
+    "Logged in Successfully.",
+    201,
+  );
+
+  return setAuthCookie(response, loggedInAdmin.token, "admin_access_token");
+});

@@ -18,4 +18,10 @@ export const adminRegisterSchema = z.object({
   }),
 });
 
+export const adminLoginSchema = z.object({
+  username: z.string().nonoptional("Username is required."),
+  password: z.string().nonoptional("Password is required."),
+});
+
 export type adminRegisterSchemaType = z.infer<typeof adminRegisterSchema>;
+export type adminLoginSchemaType = z.infer<typeof adminLoginSchema>;
