@@ -10,6 +10,7 @@ import {
 import { TursoDate } from "@/utilities/dateUtils";
 import jwt from "jsonwebtoken";
 import { env } from "@/env";
+import { NextRequest } from "next/server";
 
 export interface CreatedAdmin {
   id: string;
@@ -146,7 +147,15 @@ export interface AdminDetails {
   updatedAt: string;
 }
 
-export async function fetchAdminDetails(id: string): Promise<AdminDetails> {
+export async function fetchAdminDetails(token: string): Promise<AdminDetails> {
+  //This function throws error automatically if failure during decoding
+  const decoded: LoggedInAdmin = jwt.verify(
+    token,
+    env.JWT_ACCESS_SECRET,
+  ) as LoggedInAdmin;
+
+  const id = decoded.id;
+
   const admin = await db
     .selectFrom("admin")
     .select([

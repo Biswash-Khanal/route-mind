@@ -98,6 +98,7 @@ export function withErrorHandling(handler: RouteHandler): RouteHandler {
         return errorResponse("Malformed JSON body", 400, "BAD_JSON");
       }
 
+      //add the jsonwebtoken error, for errors concerning with the jwt token decoding
       if (error instanceof JsonWebTokenError) {
         return errorResponse(
           `JWT Error: ${error.message}`,

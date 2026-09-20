@@ -21,14 +21,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   if (!token) {
     throw ApiError.unauthorized("Authentication token not found");
   }
-
-  const decoded: LoggedInAdmin = jwt.verify(
-    token,
-    env.JWT_ACCESS_SECRET,
-  ) as LoggedInAdmin;
-
-  const adminDetails: AdminDetails = await fetchAdminDetails(decoded.id);
+  const adminDetails: AdminDetails = await fetchAdminDetails(token);
 
   return successResponse(adminDetails, "Admin Data fetched successfully.");
 });
-

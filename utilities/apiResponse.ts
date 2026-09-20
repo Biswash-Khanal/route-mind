@@ -43,11 +43,33 @@ export function successResponse<T>(
   status = 200,
   code = "SUCCESS",
 ): NextResponse {
-  return baseResponse(
-    { success: true, code, message },
-    status,
-    { data },
-  );
+  return baseResponse({ success: true, code, message }, status, { data });
+}
+
+// 201 — resource created
+export function createdResponse<T>(
+  data: T,
+  message = "Resource created",
+  code = "CREATED",
+): NextResponse {
+  return successResponse(data, message, 201, code);
+}
+
+// 202 — accepted for async processing
+export function acceptedResponse<T>(
+  data: T,
+  message = "Request accepted",
+  code = "ACCEPTED",
+): NextResponse {
+  return successResponse(data, message, 202, code);
+}
+
+// 204 — no content (data omitted)
+export function noContentResponse(
+  message = "No content",
+  code = "NO_CONTENT",
+): NextResponse {
+  return baseResponse({ success: true, code, message }, 204);
 }
 
 export function errorResponse(

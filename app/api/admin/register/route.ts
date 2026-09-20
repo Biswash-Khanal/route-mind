@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { registerAdmin } from "@/services/adminService";
 import { adminRegisterSchema } from "@/shared/schemas/adminSchema";
 import { withErrorHandling } from "@/utilities/apiRoute";
-import { successResponse } from "@/utilities/apiResponse";
+import { createdResponse, successResponse } from "@/utilities/apiResponse";
 
 /**
  * POST /api/admin/register — create a new admin.
@@ -20,5 +20,5 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
   const created = await registerAdmin(data);
 
-  return successResponse(created, "Admin created successfully", 201);
+  return createdResponse(created, "Admin created successfully");
 });
