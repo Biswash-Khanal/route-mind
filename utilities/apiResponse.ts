@@ -69,7 +69,7 @@ export function noContentResponse(
   message = "No content",
   code = "NO_CONTENT",
 ): NextResponse {
-  return baseResponse({ success: true, code, message }, 204);
+  return baseResponse({ success: true, code, message }, 200);
 }
 
 export function errorResponse(

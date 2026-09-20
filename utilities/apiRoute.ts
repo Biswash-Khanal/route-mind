@@ -5,28 +5,10 @@ import { ApiError } from "@/shared/errors/apiError";
 import { errorResponse } from "@/utilities/apiResponse";
 import { JsonWebTokenError } from "jsonwebtoken";
 
-type RouteHandler = (
+export type RouteHandler = (
   req: NextRequest,
-  context: { params: Promise<Record<string, string>> },
+  context: Promise<Record<string, string | string[]>>,
 ) => Promise<NextResponse>;
-
-/**
- * Normalizes an unknown thrown value into a shape that is safe and useful to log.
- *
- * The `catch` parameter is typed `unknown` because a thrown value is not
- * guaranteed to be an `Error`. Real-world failures fall into three buckets,
- * and this helper handles all of them:
- *
- *   1. Error instances (most libraries: zod, Kysely, drivers, ...) ->
- *      capture name/message, any extra structured props (e.g. a DB `code`),
- *      the stack, and the full `cause` chain. The root cause at the bottom
- *      of the chain is where driver/database details usually live.
- *   2. Plain objects -> log as-is; the logger/console prints their structure.
- *   3. Primitives (`throw "boom"`) -> best-effort String().
- *
- * Note: we deliberately do NOT send any of this to the client. Logging is
- * liberal; the response is strictly generic (see the catch-all branch).
- */
 
 function normalizeErrorForLog(error: unknown): unknown {
   if (error instanceof Error) {
@@ -53,18 +35,6 @@ function normalizeErrorForLog(error: unknown): unknown {
   return String(error);
 }
 
-/**
- * Wraps an API route handler so that every failure funnels through one place.
- *
- * The wrapper is a *classifier*: it asks "what kind of error was thrown?" and
- * decides how to respond. It is the only code that knows how to translate a
- * failure into an HTTP response, so routes and services never do.
- *
- *   - ApiError   -> already carries a status/code/message; safe to reflect back.
- *   - ZodError   -> input failed validation; always a 422 with a per-field map.
- *   - SyntaxError-> `req.json()` failed; malformed body, 400.
- *   - anything   -> an unexpected bug; log everything, respond generically.
- */
 export function withErrorHandling(handler: RouteHandler): RouteHandler {
   return async (req, context) => {
     try {

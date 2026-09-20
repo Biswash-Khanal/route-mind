@@ -4,6 +4,8 @@ import { registerAdmin } from "@/services/adminService";
 import { adminRegisterSchema } from "@/shared/schemas/adminSchema";
 import { withErrorHandling } from "@/utilities/apiRoute";
 import { createdResponse, successResponse } from "@/utilities/apiResponse";
+import { requireAdminAuth } from "@/utilities/authenticationWrappers";
+import { requireAdminRole } from "@/utilities/authorizationWrappers";
 
 /**
  * POST /api/admin/register — create a new admin.
@@ -14,11 +16,15 @@ import { createdResponse, successResponse } from "@/utilities/apiResponse";
  *   - ApiError from service-> wrapper returns its status/code/message
  *   - anything unexpected  -> wrapper logs and returns a generic 500
  */
-export const POST = withErrorHandling(async (req: NextRequest) => {
-  const body = await req.json();
-  const data = adminRegisterSchema.parse(body);
+export const POST = withErrorHandling(
+  requireAdminAuth(
+    requireAdminRole(["super-admin"], async (req: NextRequest) => {
+      const body = await req.json();
+      const data = adminRegisterSchema.parse(body);
 
-  const created = await registerAdmin(data);
+      const created = await registerAdmin(data);
 
-  return createdResponse(created, "Admin created successfully");
-});
+      return createdResponse(created, "Admin created successfully");
+    }),
+  ),
+);

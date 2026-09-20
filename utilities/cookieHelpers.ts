@@ -9,7 +9,7 @@ export function setAuthCookie(
   res.cookies.set(token_name, jwtToken, {
     httpOnly: true,
     secure: env.NODE_ENV === "production",
-    maxAge: 60,
+    maxAge: 60 * 60 * 24,
     path: "/",
     sameSite: "lax",
   });
