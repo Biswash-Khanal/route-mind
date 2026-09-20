@@ -165,3 +165,63 @@ export async function fetchAdminDetails(id: string): Promise<AdminDetails> {
     updatedAt: admin.updated_at,
   };
 }
+
+export async function changeAdminUsername(
+  id: string,
+  newUsername: string,
+): Promise<AdminDetails> {
+  const conflict = await db
+    .selectFrom("admin")
+    .select(["id", "username"])
+    .where((eb) => eb.or([eb("id", "=", id), eb("username", "=", newUsername)]))
+    .execute();
+
+  // console.log(conflict);
+
+  if (conflict.length === 0) {
+    throw ApiError.unauthorized("Admin account no longer exists.");
+  }
+
+  const currentAdmin = conflict.find((el) => el.id === id);
+  if (!currentAdmin) {
+    throw ApiError.unauthorized("Admin account no longer exists.");
+  }
+
+  if (currentAdmin.username === newUsername) {
+    throw ApiError.conflict("Cannot change username to what it already is.");
+  }
+
+  const duplicateUsername = conflict.find(
+    (a) => a.username === newUsername && a.id !== id,
+  );
+  if (duplicateUsername) {
+    throw ApiError.conflict("Username already taken.");
+  }
+
+  //username is unique, we can change it
+
+  const now = TursoDate.toTurso(new Date());
+  const updatedAdmin = await db
+    .updateTable("admin")
+    .set({ username: newUsername, updated_at: now })
+    .where("id", "=", id)
+    .returningAll()
+    .executeTakeFirst();
+
+  if (!updatedAdmin) {
+    throw ApiError.unauthorized("Admin account no longer exists.");
+  }
+
+  // Transform snake_case database model to camelCase API DTO
+  return {
+    id: updatedAdmin.id,
+    username: updatedAdmin.username,
+    firstName: updatedAdmin.first_name,
+    lastName: updatedAdmin.last_name,
+    middleName: updatedAdmin.middle_name,
+    email: updatedAdmin.email,
+    role: updatedAdmin.role,
+    createdAt: updatedAdmin.created_at,
+    updatedAt: updatedAdmin.updated_at,
+  };
+}

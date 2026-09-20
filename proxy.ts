@@ -9,8 +9,8 @@ export function proxy(request: NextRequest) {
 
   if (
     pathname.startsWith("/api/admin") &&
-    !pathname.startsWith("/api/admin/login") &&
-    !pathname.startsWith("/api/admin/logout")
+    !pathname.startsWith("/api/admin/auth/login") &&
+    !pathname.startsWith("/api/admin/auth/logout")
   ) {
     //very basic check for token existence
     const hasToken = request.cookies.get("admin_access_token")?.value;

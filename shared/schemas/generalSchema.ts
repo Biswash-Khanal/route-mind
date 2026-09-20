@@ -16,8 +16,7 @@ export const usernameSchema = z
   .min(3, "Must be at least 3 characters.")
   .max(25, "Cannot be longer than 25 characters")
   .regex(/^[a-zA-Z0-9_]+$/, {
-    error:
-      "Can only contain lowercase letters(a-z), numbers(0-9) and underscores(_).",
+    error: "Can only contain letters(a-Z), numbers(0-9) and underscores(_).",
   });
 
 export const passwordSchema = z
