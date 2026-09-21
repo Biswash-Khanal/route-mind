@@ -44,7 +44,6 @@ export const adminChangePasswordSchema = z
   });
 
 export const adminForcePasswordChangeSchema = z.object({
-  id: z.uuid("ID needs to be a valid UUID").nonoptional("ID is required"),
   newPassword: passwordSchema.nonoptional("New Password is required."),
 });
 

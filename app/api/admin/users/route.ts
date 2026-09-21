@@ -1,6 +1,7 @@
-import { fetchAllAdmins } from "@/services/adminService";
+import { fetchAllAdmins, registerAdmin } from "@/services/adminService";
+import { adminRegisterSchema } from "@/shared/schemas/adminSchema";
 import { AdminDetails, JwtAdminPayload } from "@/shared/types/admin";
-import { successResponse } from "@/utilities/apiResponse";
+import { createdResponse, successResponse } from "@/utilities/apiResponse";
 import { withErrorHandling } from "@/utilities/apiRoute";
 import { requireAdminAuth } from "@/utilities/authenticationWrappers";
 import { requireAdminRole } from "@/utilities/authorizationWrappers";
@@ -13,6 +14,19 @@ export const GET = withErrorHandling(
       const adminUsers: AdminDetails[] = await fetchAllAdmins();
 
       return successResponse(adminUsers, "All admin data successfully fetched");
+    }),
+  ),
+);
+
+export const POST = withErrorHandling(
+  requireAdminAuth(
+    requireAdminRole(["super-admin"], async (req: NextRequest) => {
+      const body = await req.json();
+      const data = adminRegisterSchema.parse(body);
+
+      const created = await registerAdmin(data);
+
+      return createdResponse(created, "Admin created successfully");
     }),
   ),
 );

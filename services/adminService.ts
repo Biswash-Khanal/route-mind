@@ -130,8 +130,6 @@ export async function loginAdmin(
 }
 //----------------------------------------------------------------------------------//
 
-
-
 //----------------------------------------------------------------------------------//
 export async function fetchAdminDetails(id: string): Promise<AdminDetails> {
   const admin = await db
@@ -148,7 +146,6 @@ export async function fetchAdminDetails(id: string): Promise<AdminDetails> {
   return mapToAdminDetails(admin);
 }
 //----------------------------------------------------------------------------------//
-
 
 //----------------------------------------------------------------------------------//
 
@@ -199,8 +196,6 @@ export async function changeAdminUsername(
   return mapToAdminDetails(updatedAdmin);
 }
 //----------------------------------------------------------------------------------//
-
-
 
 //----------------------------------------------------------------------------------//
 
@@ -255,8 +250,6 @@ export async function changeAdminPassword(
 }
 //----------------------------------------------------------------------------------//
 
-
-
 //----------------------------------------------------------------------------------//
 
 export async function fetchAllAdmins(): Promise<AdminDetails[]> {
@@ -268,5 +261,93 @@ export async function fetchAllAdmins(): Promise<AdminDetails[]> {
 
   //map the databse column name objects into camelcase ones matching our AdminDetails shape
   return admins.map(mapToAdminDetails);
+}
+//----------------------------------------------------------------------------------//
+
+//----------------------------------------------------------------------------------//
+export async function forceChangeAdminPassword(
+  callingAdminId: string,
+  id: string,
+  newPassword: string,
+): Promise<AdminDetails> {
+  if (id === callingAdminId) {
+    throw ApiError.forbidden(
+      "Super admins are not allowed to change their own passwords through this endpoint. Please use /admin/me/password instead.",
+    );
+  }
+  // 1. Fetch the admin details and check for existence
+  const admin = await db
+    .selectFrom("admin")
+    .selectAll()
+    .where("id", "=", id)
+    .executeTakeFirst();
+
+  if (!admin) {
+    throw ApiError.unauthorized("Admin account no longer exists.");
+  }
+
+  // 4. Hash new password and update database
+  const now = TursoDate.toTurso(new Date());
+  const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+  const updatedAdmin = await db
+    .updateTable("admin")
+    .set({ password_hash: newPasswordHash, updated_at: now })
+    .where("id", "=", id)
+    .returningAll()
+    .executeTakeFirst();
+
+  if (!updatedAdmin) {
+    throw ApiError.unauthorized("Admin account no longer exists.");
+  }
+
+  return mapToAdminDetails(updatedAdmin);
+}
+//----------------------------------------------------------------------------------//
+
+//----------------------------------------------------------------------------------//
+export async function deleteAdmin(
+  callingAdminId: string,
+  id: string,
+): Promise<AdminDetails> {
+  if (callingAdminId === id) {
+    throw ApiError.forbidden(
+      "Super admins are not allowed to delete their own account.",
+    );
+  }
+
+  // 1. Fetch the admin details and check for existence, while also saving a snapshot before deletion
+
+  const admin = await db
+    .selectFrom("admin")
+    .selectAll()
+    .where("id", "=", id)
+    .executeTakeFirst();
+
+  if (!admin) {
+    throw ApiError.unauthorized("Admin account no longer exists.");
+  }
+
+  //check if the admin's role is super admin, if it is, it cant be deleted
+  if (admin.role === "super-admin") {
+    throw ApiError.forbidden("Super admin accounts cannot be deleted.");
+  }
+
+  const deletedResult = await db
+    .deleteFrom("admin")
+    .where("id", "=", id)
+    .executeTakeFirst();
+
+  const deletedCount = Number(deletedResult.numDeletedRows);
+
+  if (deletedCount === 0) {
+    throw ApiError.notFound("Admin account not found.");
+  }
+
+  if (deletedCount > 1) {
+    throw ApiError.internal("Unexpected: multiple admin accounts deleted.");
+  }
+
+  return mapToAdminDetails(admin);
 }
 //----------------------------------------------------------------------------------//
