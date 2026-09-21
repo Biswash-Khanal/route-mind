@@ -30,9 +30,9 @@ export const adminChangePasswordSchema = z
   .object({
     oldPassword: z.string().nonoptional("Old Password is required."),
     newPassword: passwordSchema.nonoptional("New Password is required."),
-    confirmPassword: passwordSchema.nonoptional(
-      "New Password Confirmation is required.",
-    ),
+    confirmPassword: z
+      .string()
+      .nonoptional("New Password Confirmation is required."),
   })
   .refine((fields) => fields.oldPassword !== fields.newPassword, {
     error: "The new password must be different from the older one",

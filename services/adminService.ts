@@ -12,7 +12,24 @@ import jwt from "jsonwebtoken";
 import { env } from "@/env";
 import { NextRequest } from "next/server";
 import { AdminDetails, JwtAdminPayload } from "@/shared/types/admin";
+import { hashedPassword, verifyPassword } from "@/utilities/passwordUtils";
+import { Admin } from "@/database/types";
+import { Selectable } from "kysely";
 
+function mapToAdminDetails(admin: Selectable<Admin>): AdminDetails {
+  return {
+    id: admin.id,
+    username: admin.username,
+    firstName: admin.first_name,
+    lastName: admin.last_name,
+    middleName: admin.middle_name,
+    email: admin.email,
+    role: admin.role,
+    createdAt: admin.created_at,
+    updatedAt: admin.updated_at,
+  };
+}
+//----------------------------------------------------------------------------------//
 export async function registerAdmin(
   data: adminRegisterSchemaType,
 ): Promise<AdminDetails> {
@@ -39,7 +56,7 @@ export async function registerAdmin(
 
   // 2. Hash & prepare fields
   const id = randomUUID();
-  const hashedPassword = await bcrypt.hash(data.password, 10);
+  const passwordHash = await hashedPassword(data.password);
   const now = TursoDate.toTurso(new Date());
 
   // 3. Insert and return the raw inserted row in ONE query
@@ -53,29 +70,20 @@ export async function registerAdmin(
       username: data.username,
       email: data.email,
       role: data.role,
-      password_hash: hashedPassword,
+      password_hash: passwordHash,
       created_at: now,
       updated_at: now,
     })
     .returningAll()
     .executeTakeFirstOrThrow();
 
-  return {
-    id: inserted.id,
-    username: inserted.username,
-    email: inserted.email,
-    firstName: inserted.first_name,
-    lastName: inserted.last_name,
-    middleName: inserted.middle_name,
-    role: inserted.role,
-    createdAt: inserted.created_at,
-    updatedAt: inserted.updated_at,
-  };
+  return mapToAdminDetails(inserted);
 }
+//----------------------------------------------------------------------------------//
 
+//----------------------------------------------------------------------------------//
 export interface LoggedInAdminWithToken {
   admin: AdminDetails;
-
   token: string;
 }
 
@@ -94,7 +102,7 @@ export async function loginAdmin(
   }
 
   //Once confirmed that an account with this username does exist, test the password against the password hash, if no match, say incorrect password, if does match continue
-  const passwordMatch = await bcrypt.compare(
+  const passwordMatch = await verifyPassword(
     data.password,
     adminWithUsername.password_hash,
   );
@@ -116,35 +124,19 @@ export async function loginAdmin(
   });
 
   return {
-    admin: {
-      id: adminWithUsername.id,
-      username: adminWithUsername.username,
-      firstName: adminWithUsername.first_name,
-      lastName: adminWithUsername.last_name,
-      middleName: adminWithUsername.middle_name,
-      email: adminWithUsername.email,
-      role: adminWithUsername.role,
-      createdAt: adminWithUsername.created_at,
-      updatedAt: adminWithUsername.updated_at,
-    },
+    admin: mapToAdminDetails(adminWithUsername),
     token: access_token,
   };
 }
+//----------------------------------------------------------------------------------//
 
+
+
+//----------------------------------------------------------------------------------//
 export async function fetchAdminDetails(id: string): Promise<AdminDetails> {
   const admin = await db
     .selectFrom("admin")
-    .select([
-      "id",
-      "username",
-      "first_name",
-      "last_name",
-      "middle_name",
-      "email",
-      "role",
-      "created_at",
-      "updated_at",
-    ])
+    .selectAll()
     .where("id", "=", id)
     .executeTakeFirst();
 
@@ -153,18 +145,12 @@ export async function fetchAdminDetails(id: string): Promise<AdminDetails> {
   }
 
   // Transform snake_case database model to camelCase API DTO
-  return {
-    id: admin.id,
-    username: admin.username,
-    firstName: admin.first_name,
-    lastName: admin.last_name,
-    middleName: admin.middle_name,
-    email: admin.email,
-    role: admin.role,
-    createdAt: admin.created_at,
-    updatedAt: admin.updated_at,
-  };
+  return mapToAdminDetails(admin);
 }
+//----------------------------------------------------------------------------------//
+
+
+//----------------------------------------------------------------------------------//
 
 export async function changeAdminUsername(
   id: string,
@@ -175,8 +161,6 @@ export async function changeAdminUsername(
     .select(["id", "username"])
     .where((eb) => eb.or([eb("id", "=", id), eb("username", "=", newUsername)]))
     .execute();
-
-  // console.log(conflict);
 
   if (conflict.length === 0) {
     throw ApiError.unauthorized("Admin account no longer exists.");
@@ -212,16 +196,77 @@ export async function changeAdminUsername(
     throw ApiError.unauthorized("Admin account no longer exists.");
   }
 
-  // Transform snake_case database model to camelCase API DTO
-  return {
-    id: updatedAdmin.id,
-    username: updatedAdmin.username,
-    firstName: updatedAdmin.first_name,
-    lastName: updatedAdmin.last_name,
-    middleName: updatedAdmin.middle_name,
-    email: updatedAdmin.email,
-    role: updatedAdmin.role,
-    createdAt: updatedAdmin.created_at,
-    updatedAt: updatedAdmin.updated_at,
-  };
+  return mapToAdminDetails(updatedAdmin);
 }
+//----------------------------------------------------------------------------------//
+
+
+
+//----------------------------------------------------------------------------------//
+
+export async function changeAdminPassword(
+  id: string,
+  oldPassword: string,
+  newPassword: string,
+): Promise<AdminDetails> {
+  // 1. Fetch current admin details
+  const admin = await db
+    .selectFrom("admin")
+    .selectAll()
+    .where("id", "=", id)
+    .executeTakeFirst();
+
+  if (!admin) {
+    throw ApiError.unauthorized("Admin account no longer exists.");
+  }
+
+  // 2. First verify that oldPassword matches the stored hash
+  const isOldMatch = await bcrypt.compare(oldPassword, admin.password_hash);
+  if (!isOldMatch) {
+    throw ApiError.unauthorized(
+      "Old password did not match the current password.",
+    );
+  }
+
+  // 3. Verify new password isn't identical to the current hash
+  const isNewIdentical = await bcrypt.compare(newPassword, admin.password_hash);
+  if (isNewIdentical) {
+    throw ApiError.badRequest(
+      "New password cannot be the same as your current password.",
+    );
+  }
+
+  // 4. Hash new password and update database
+  const now = TursoDate.toTurso(new Date());
+  const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+  const updatedAdmin = await db
+    .updateTable("admin")
+    .set({ password_hash: newPasswordHash, updated_at: now })
+    .where("id", "=", id)
+    .returningAll()
+    .executeTakeFirst();
+
+  if (!updatedAdmin) {
+    throw ApiError.unauthorized("Admin account no longer exists.");
+  }
+
+  return mapToAdminDetails(updatedAdmin);
+}
+//----------------------------------------------------------------------------------//
+
+
+
+//----------------------------------------------------------------------------------//
+
+export async function fetchAllAdmins(): Promise<AdminDetails[]> {
+  const admins = await db.selectFrom("admin").selectAll().execute();
+
+  if (!admins) {
+    throw ApiError.unauthorized("No accounts found.");
+  }
+
+  //map the databse column name objects into camelcase ones matching our AdminDetails shape
+  return admins.map(mapToAdminDetails);
+}
+//----------------------------------------------------------------------------------//

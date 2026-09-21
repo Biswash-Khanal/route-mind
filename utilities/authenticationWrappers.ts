@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { RouteHandler } from "./apiRoute";
+import { RouteHandler, RouteHandlerContext } from "./apiRoute";
 
 import jwt from "jsonwebtoken";
 import { env } from "@/env";
 import { ApiError } from "@/shared/errors/apiError";
 import { JwtAdminPayload } from "@/shared/types/admin";
 
-export type AdminAuthenticatedRouteHandler = (
+export type AdminAuthenticatedRouteHandler<T> = (
   req: NextRequest,
   adminPayload: JwtAdminPayload,
-  context: Promise<Record<string, string | string[]>>,
+  context: RouteHandlerContext<T>,
 ) => Promise<NextResponse>;
 
-export function requireAdminAuth(
-  authRequiredHandler: AdminAuthenticatedRouteHandler,
-): RouteHandler {
+export function requireAdminAuth<T>(
+  authRequiredHandler: AdminAuthenticatedRouteHandler<T>,
+): RouteHandler<T> {
   return async (req, context) => {
     const token = req.cookies.get("admin_access_token")?.value;
     if (!token) {

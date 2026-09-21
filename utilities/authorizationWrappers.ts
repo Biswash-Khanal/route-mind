@@ -1,12 +1,11 @@
 import { ApiError } from "@/shared/errors/apiError";
-import { RouteHandler } from "./apiRoute";
 import { AvailableAdminRoles } from "@/shared/types/admin";
 import { AdminAuthenticatedRouteHandler } from "./authenticationWrappers";
 
-export function requireAdminRole(
+export function requireAdminRole<T>(
   allowedRoles: AvailableAdminRoles[],
-  handler: AdminAuthenticatedRouteHandler,
-): AdminAuthenticatedRouteHandler {
+  handler: AdminAuthenticatedRouteHandler<T>,
+): AdminAuthenticatedRouteHandler<T> {
   return async (req, adminPayload, context) => {
     if (!allowedRoles.includes(adminPayload.role)) {
       throw ApiError.forbidden(

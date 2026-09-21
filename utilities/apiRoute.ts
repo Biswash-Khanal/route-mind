@@ -5,9 +5,15 @@ import { ApiError } from "@/shared/errors/apiError";
 import { errorResponse } from "@/utilities/apiResponse";
 import { JsonWebTokenError } from "jsonwebtoken";
 
-export type RouteHandler = (
+//finally fixed this shit
+
+//This is a wrapper type for the context argument. Pass T= whatever the shape of the params: is expected to be
+export type RouteHandlerContext<T> = { params: Promise<T> };
+
+//This is the type for a regular route handling function. Includes the generic type T which gets infered from the <T> part passed to the context's RouteHandlerContext's T
+export type RouteHandler<T> = (
   req: NextRequest,
-  context: Promise<Record<string, string | string[]>>,
+  context: RouteHandlerContext<T>,
 ) => Promise<NextResponse>;
 
 function normalizeErrorForLog(error: unknown): unknown {
@@ -35,7 +41,7 @@ function normalizeErrorForLog(error: unknown): unknown {
   return String(error);
 }
 
-export function withErrorHandling(handler: RouteHandler): RouteHandler {
+export function withErrorHandling<T>(handler: RouteHandler<T>): RouteHandler<T> {
   return async (req, context) => {
     try {
       return await handler(req, context);
