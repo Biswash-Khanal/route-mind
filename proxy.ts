@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { ApiError } from "./shared/errors/apiError";
 import { errorResponse } from "./utilities/apiResponse";
 import { verifyAdminToken } from "./utilities/jwtUtils";
-import { redirect } from "next/navigation";
+import { sanitizeCallbackUrl } from "./utilities/callbackUrl";
 
 // This function can be marked `async` if using `await` inside
 export function proxy(request: NextRequest) {
@@ -19,13 +19,11 @@ export function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
-    const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
-    
-    if (callbackUrl) {
-      return NextResponse.redirect(new URL(callbackUrl, request.url));
-    } else {
-      return NextResponse.redirect(new URL("/admin", request.url));
-    }
+    const callbackUrl = sanitizeCallbackUrl(
+      request.nextUrl.searchParams.get("callbackUrl"),
+    );
+
+    return NextResponse.redirect(new URL(callbackUrl, request.url));
   }
 
   // Protect all other /admin routes
