@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { env } from "@/env";
 import { ApiError } from "@/shared/errors/apiError";
 import { JwtAdminPayload } from "@/shared/types/admin";
+import { verifyAdminToken } from "./jwtUtils";
 
 export type AdminAuthenticatedRouteHandler<T> = (
   req: NextRequest,
@@ -21,10 +22,11 @@ export function requireAdminAuth<T>(
       throw ApiError.unauthorized("Admin is not logged in.");
     }
 
-    const decodedToken: JwtAdminPayload = jwt.verify(
-      token,
-      env.JWT_ACCESS_SECRET,
-    ) as JwtAdminPayload;
+    const decodedToken = verifyAdminToken(token);
+
+    if (!decodedToken) {
+      throw ApiError.unauthorized("JWT couldn't be verified.");
+    }
 
     return await authRequiredHandler(req, decodedToken, context);
   };

@@ -15,6 +15,7 @@ import { AdminDetails, JwtAdminPayload } from "@/shared/types/admin";
 import { hashedPassword, verifyPassword } from "@/utilities/passwordUtils";
 import { Admin } from "@/database/types";
 import { Selectable } from "kysely";
+import { signAdminToken } from "@/utilities/jwtUtils";
 
 function mapToAdminDetails(admin: Selectable<Admin>): AdminDetails {
   return {
@@ -119,9 +120,7 @@ export async function loginAdmin(
   };
 
   //generate an access token
-  const access_token = jwt.sign(payload, env.JWT_ACCESS_SECRET, {
-    expiresIn: "1d",
-  });
+  const access_token = signAdminToken(payload);
 
   return {
     admin: mapToAdminDetails(adminWithUsername),

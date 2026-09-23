@@ -2,10 +2,45 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ApiError } from "./shared/errors/apiError";
 import { errorResponse } from "./utilities/apiResponse";
+import { verifyAdminToken } from "./utilities/jwtUtils";
+import { redirect } from "next/navigation";
 
 // This function can be marked `async` if using `await` inside
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  const adminToken = request.cookies.get("admin_access_token")?.value;
+
+  //if login page accessed when already logged in, go to the callback url if exists, else go to /admin
+  if (pathname.startsWith("/admin/login")) {
+    const decodedToken = adminToken ? verifyAdminToken(adminToken) : null;
+
+    if (!decodedToken) {
+      return NextResponse.next();
+    }
+
+    const callbackUrl = request.nextUrl.searchParams.get("callbackUrl");
+    
+    if (callbackUrl) {
+      return NextResponse.redirect(new URL(callbackUrl, request.url));
+    } else {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+  }
+
+  // Protect all other /admin routes
+  if (pathname.startsWith("/admin")) {
+    const decodedToken = adminToken ? verifyAdminToken(adminToken) : null;
+
+    if (!decodedToken) {
+      // Redirect unauthenticated users
+      const loginUrlWithCallback = new URL("/admin/login", request.url);
+      loginUrlWithCallback.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrlWithCallback);
+    }
+  }
+
+  //for backend paths
 
   if (
     pathname.startsWith("/api/admin") &&
