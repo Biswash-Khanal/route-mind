@@ -1,3 +1,4 @@
+import { ApiEnvelope } from "@/shared/types/api";
 import { NextResponse } from "next/server";
 
 /**
@@ -22,28 +23,41 @@ import { NextResponse } from "next/server";
  *     those go to the log only (see normalizeErrorForLog in apiRoute.ts).
  */
 
-function baseResponse(
+function baseResponse<TData, TDetails>(
   payload: { success: boolean; code: string; message: string },
   status: number,
-  extra?: { data?: unknown; details?: unknown },
-): NextResponse {
+  extra?: { data?: TData; details?: TDetails },
+): NextResponse<ApiEnvelope<TData, TDetails>> {
   return NextResponse.json(
     {
       timestamp: new Date().toISOString(),
       ...payload,
       ...extra,
-    },
+    } as ApiEnvelope<TData, TDetails>,
     { status },
   );
 }
 
-export function successResponse<T>(
-  data: T,
+export function successResponse<TData = unknown>(
+  data: TData,
   message = "OK",
   status = 200,
   code = "SUCCESS",
-): NextResponse {
+): NextResponse<ApiEnvelope<TData, unknown>> {
   return baseResponse({ success: true, code, message }, status, { data });
+}
+
+export function errorResponse<TDetails = unknown>(
+  message: string,
+  status = 400,
+  code = "ERROR",
+  details?: TDetails,
+): NextResponse<ApiEnvelope<unknown, TDetails>> {
+  return baseResponse(
+    { success: false, code, message },
+    status,
+    details !== undefined ? { details } : undefined,
+  );
 }
 
 // 201 — resource created
@@ -69,18 +83,5 @@ export function noContentResponse(
   message = "No content",
   code = "NO_CONTENT",
 ): NextResponse {
-  return baseResponse({ success: true, code, message }, 200);
-}
-
-export function errorResponse(
-  message: string,
-  status = 400,
-  code = "ERROR",
-  details?: unknown,
-): NextResponse {
-  return baseResponse(
-    { success: false, code, message },
-    status,
-    details !== undefined ? { details } : undefined,
-  );
+  return successResponse(null, message, 200, code);
 }

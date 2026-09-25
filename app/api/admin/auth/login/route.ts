@@ -5,6 +5,9 @@ import { adminLoginSchema } from "@/shared/schemas/adminSchema";
 import { withErrorHandling } from "@/utilities/apiRoute";
 import { successResponse } from "@/utilities/apiResponse";
 import { setAuthCookie } from "@/utilities/cookieHelpers";
+import { AdminDetails } from "@/shared/types/admin";
+
+export type AdminLoginResponseData = AdminDetails;
 
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const body = await req.json();
@@ -13,7 +16,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const loggedInAdmin: LoggedInAdminWithToken = await loginAdmin(data);
 
   const response = successResponse(
-    loggedInAdmin.admin,
+    loggedInAdmin.admin as AdminLoginResponseData,
     "Logged in Successfully.",
     201,
   );

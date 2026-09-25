@@ -2,28 +2,40 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { adminLoginSchema } from "@/shared/schemas/adminSchema";
+import { ApiEnvelope } from "@/shared/types/api";
+import { AdminLoginResponseData } from "@/app/api/admin/auth/login/route";
+
+// 2. Automatically generate the TypeScript type from the schema
+type LoginFormData = z.infer<typeof adminLoginSchema>;
 
 const AdminLoginForm = ({ callbackUrl }: { callbackUrl: string }) => {
   const router = useRouter();
-
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsSubmitting(true);
+  // 3. Connect Zod to React Hook Form using the resolver
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(adminLoginSchema),
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
     setError(null);
 
     try {
       const response = await fetch("/api/admin/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(data),
       });
 
-      const body = await response.json();
+      const body: ApiEnvelope<AdminLoginResponseData> = await response.json();
 
       if (!response.ok || !body.success) {
         setError(body.message ?? "Login failed. Please try again.");
@@ -33,14 +45,12 @@ const AdminLoginForm = ({ callbackUrl }: { callbackUrl: string }) => {
       router.replace(callbackUrl);
     } catch {
       setError("Something went wrong. Please try again.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit(onSubmit)}
       className="w-full max-w-sm flex flex-col gap-4"
     >
       <div className="flex flex-col gap-1">
@@ -49,13 +59,14 @@ const AdminLoginForm = ({ callbackUrl }: { callbackUrl: string }) => {
         </label>
         <input
           id="username"
-          name="username"
           type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
+          {...register("username")}
           className="border rounded-md px-3 py-2"
         />
+        {/* 4. Display inline validation error if it exists */}
+        {errors.username && (
+          <p className="text-xs text-red-600">{errors.username.message}</p>
+        )}
       </div>
 
       <div className="flex flex-col gap-1">
@@ -64,13 +75,14 @@ const AdminLoginForm = ({ callbackUrl }: { callbackUrl: string }) => {
         </label>
         <input
           id="password"
-          name="password"
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
+          {...register("password")}
           className="border rounded-md px-3 py-2"
         />
+        {/* 4. Display inline validation error if it exists */}
+        {errors.password && (
+          <p className="text-xs text-red-600">{errors.password.message}</p>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
