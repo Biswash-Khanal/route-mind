@@ -13,10 +13,22 @@ export interface Admin {
   updated_at: ColumnType<string, string | undefined, string>;
 }
 
+export interface Operators {
+  id: string;
+  name: string;
+  address: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  license_number: string | null;
+  website_url: string | null;
+  created_at: ColumnType<string, string | undefined, never>;
+  updated_at: ColumnType<string, string | undefined, string>;
+}
+
 export interface Routes {
   id: string;
   name: string;
-  operator: string;
+  operator_id: string;
   fare: number;
   created_at: ColumnType<string, string | undefined, never>;
   updated_at: ColumnType<string, string | undefined, string>;
@@ -56,4 +68,5 @@ export interface DB {
   route_stops: RouteStops;
   route_shape_points: RouteShapePoints;
   admin: Admin;
+  operators: Operators;
 }

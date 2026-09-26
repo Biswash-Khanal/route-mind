@@ -7,6 +7,8 @@ import { requireAdminAuth } from "@/utilities/authenticationWrappers";
 import { NextRequest } from "next/server";
 import z from "zod";
 
+export type AdminInformationChangeResponseData = AdminDetails;
+
 export const PATCH = withErrorHandling(
   requireAdminAuth(async (req: NextRequest, adminPayload: JwtAdminPayload) => {
     const body = await req.json();
@@ -18,6 +20,9 @@ export const PATCH = withErrorHandling(
       parsed.username,
     );
 
-    return successResponse(updatedAdmin, "Username changed successfully.");
+    return successResponse(
+      updatedAdmin as AdminInformationChangeResponseData,
+      "Username changed successfully.",
+    );
   }),
 );

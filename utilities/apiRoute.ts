@@ -41,6 +41,26 @@ function normalizeErrorForLog(error: unknown): unknown {
   return String(error);
 }
 
+/**
+ * Detects a database foreign-key violation.
+ *
+ * The schema uses ON DELETE RESTRICT, so the database itself refuses to delete a
+ * parent row that still has children. This is the backstop for that guarantee: if a
+ * delete endpoint ever forgets its `assert…Unlinked` guard, the request fails safely
+ * with a 409 instead of destroying dependent rows.
+ *
+ * libsql reports this as a `SQLITE_CONSTRAINT_FOREIGNKEY` error code.
+ */
+function isForeignKeyViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code?: unknown }).code === "string" &&
+    (error as { code: string }).code.startsWith("SQLITE_CONSTRAINT_FOREIGNKEY")
+  );
+}
+
 export function withErrorHandling<T>(handler: RouteHandler<T>): RouteHandler<T> {
   return async (req, context) => {
     try {
@@ -80,6 +100,17 @@ export function withErrorHandling<T>(handler: RouteHandler<T>): RouteHandler<T> 
           `JWT Error: ${error.message}`,
           401,
           error.name.toUpperCase(),
+        );
+      }
+
+      // Backstop for the schema's ON DELETE RESTRICT. The delete endpoints check
+      // dependents up front and return a richer 409 with counts; this only fires if
+      // one of those guards is missing.
+      if (isForeignKeyViolation(error)) {
+        return errorResponse(
+          "Cannot delete: other records still reference this one.",
+          409,
+          "FK_CONSTRAINT",
         );
       }
 

@@ -11,6 +11,7 @@ import { RouteHandlerContext, withErrorHandling } from "@/utilities/apiRoute";
 import { requireAdminAuth } from "@/utilities/authenticationWrappers";
 import { requireAdminRole } from "@/utilities/authorizationWrappers";
 import { NextRequest } from "next/server";
+import { AdminInformationChangeResponseData } from "../../../me/username/route";
 
 type context = { id: string };
 
@@ -31,7 +32,10 @@ export const POST = withErrorHandling(
           parsed.newPassword,
         );
 
-        return successResponse(adminUser, "Admin Data successfully fetched.");
+        return successResponse(
+          adminUser as AdminInformationChangeResponseData,
+          "Admin Data successfully fetched.",
+        );
       },
     ),
   ),

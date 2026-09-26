@@ -7,16 +7,23 @@ import { requireAdminAuth } from "@/utilities/authenticationWrappers";
 import { requireAdminRole } from "@/utilities/authorizationWrappers";
 import { NextRequest } from "next/server";
 
+export type AdminGetAllUsersResponseData = AdminDetails[];
+
 export const GET = withErrorHandling(
   requireAdminAuth(
     requireAdminRole(["super-admin"], async () => {
       //is a get request, that passes through authentication first, and then the authorization, if both success, we just return the admin tables
       const adminUsers: AdminDetails[] = await fetchAllAdmins();
 
-      return successResponse(adminUsers, "All admin data successfully fetched");
+      return successResponse(
+        adminUsers as AdminGetAllUsersResponseData,
+        "All admin data successfully fetched",
+      );
     }),
   ),
 );
+
+export type AdminCreatedResponseData = AdminDetails;
 
 export const POST = withErrorHandling(
   requireAdminAuth(
@@ -26,7 +33,10 @@ export const POST = withErrorHandling(
 
       const created = await registerAdmin(data);
 
-      return createdResponse(created, "Admin created successfully");
+      return createdResponse(
+        created as AdminCreatedResponseData,
+        "Admin created successfully",
+      );
     }),
   ),
 );

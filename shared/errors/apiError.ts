@@ -64,9 +64,18 @@ export class ApiError extends Error {
   /**
    * 409 — an operation conflicted with existing data (e.g. a unique field
    * like username or email was already taken).
+   *
+   * Takes `options` like `badRequest` so a conflict can carry structured extras —
+   * the delete endpoints use `details.dependents` to report how many rows still
+   * reference the record being deleted.
    */
-  static conflict(message = "Resource already exists"): ApiError {
-    return new ApiError(409, "CONFLICT", message);
+  static conflict(
+    message = "Resource already exists",
+    options: { code?: string; details?: unknown } = {},
+  ): ApiError {
+    return new ApiError(409, options.code ?? "CONFLICT", message, {
+      details: options.details,
+    });
   }
 
   /** 500 — used only as a last resort fallback; most 500s are the catch-all. */

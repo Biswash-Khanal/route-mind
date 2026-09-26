@@ -1,9 +1,5 @@
-import {
-  deleteAdmin,
-  fetchAdminDetails,
-  fetchAllAdmins,
-} from "@/services/adminService";
-import { ApiError } from "@/shared/errors/apiError";
+import { Admin } from "@/database/types";
+import { deleteAdmin, fetchAdminDetails } from "@/services/adminService";
 import { AdminDetails, JwtAdminPayload } from "@/shared/types/admin";
 import { successResponse } from "@/utilities/apiResponse";
 import { RouteHandlerContext, withErrorHandling } from "@/utilities/apiRoute";
@@ -13,6 +9,7 @@ import { NextRequest } from "next/server";
 
 type context = { id: string };
 
+export type AdminFetchByIdResponseData = AdminDetails;
 export const GET = withErrorHandling(
   requireAdminAuth(
     requireAdminRole(
@@ -29,6 +26,8 @@ export const GET = withErrorHandling(
   ),
 );
 
+export type AdminDeleteResponseData = AdminDetails;
+
 export const DELETE = withErrorHandling(
   requireAdminAuth(
     requireAdminRole(
@@ -37,7 +36,10 @@ export const DELETE = withErrorHandling(
         //is a get request, that passes through authentication first, and then the authorization, if both success, we just return the admin tables
         const { id } = await context.params;
 
-        const deletedAdminUser: AdminDetails = await deleteAdmin(adminPayload.id, id);
+        const deletedAdminUser: AdminDetails = await deleteAdmin(
+          adminPayload.id,
+          id,
+        );
 
         return successResponse(deletedAdminUser, "Admin Successfully deleted.");
       },

@@ -27,12 +27,3 @@ export type AdminDetails = Omit<MasterAdmin, "passwordHash">;
 // Pick ONLY what the backend wrapper needs for instant verification
 export type JwtAdminPayload = Pick<MasterAdmin, "id" | "role" | "email">;
 
-// 4. Registration Payload (What the client sends during register)
-// Pick required fields for creation
-export type RegisterAdminInput = Pick<
-  MasterAdmin,
-  "username" | "email" | "firstName" | "lastName" | "role"
-> & {
-  password: string; // Plaintext password before hashing
-  middleName?: string | null;
-};

@@ -6,6 +6,7 @@ import { withErrorHandling } from "@/utilities/apiRoute";
 import { requireAdminAuth } from "@/utilities/authenticationWrappers";
 import { clearAuthCookie } from "@/utilities/cookieHelpers";
 import { NextRequest } from "next/server";
+import { AdminInformationChangeResponseData } from "../username/route";
 
 export const POST = withErrorHandling(
   requireAdminAuth(async (req: NextRequest, adminPayload: JwtAdminPayload) => {
@@ -20,7 +21,7 @@ export const POST = withErrorHandling(
     );
 
     const response = successResponse(
-      updatedAdmin,
+      updatedAdmin as AdminInformationChangeResponseData,
       "Password changed successfully.",
     );
 
