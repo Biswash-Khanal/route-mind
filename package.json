@@ -3,10 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
+    "dev:classic": "next dev",
     "build": "next build",
+    "build:check": "next build --no-lint",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run typecheck && bun run lint",
+    "check:all": "bun run typecheck && bun run lint && bun run build",
+    "db:migrate": "bun database/scripts/migrate.ts",
+    "db:migrate:up": "bun database/scripts/migrate.ts up",
+    "db:migrate:down": "bun database/scripts/migrate.ts down",
+    "db:seed": "bun database/scripts/seed.ts",
+    "db:seed:superadmin": "bun database/scripts/seed.ts super-admin"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
