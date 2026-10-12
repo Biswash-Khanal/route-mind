@@ -1,25 +1,37 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import LayoutWrapper from "./components/LayoutWrapper";
 import { ReactNode } from "react";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
+
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "RouteMind",
-  description: "Find your way around town",
+  title: {
+    default: "RouteMind — smarter routes, less guesswork",
+    template: "%s · RouteMind",
+  },
+  description:
+    "Plan your journey across town with the right balance of transit, walking, time and fare.",
+  applicationName: "RouteMind",
+  openGraph: {
+    title: "RouteMind — smarter routes, less guesswork",
+    description:
+      "Compare transit and walking options side by side: fare, duration, transfers and a leg-by-leg breakdown.",
+    type: "website",
+    siteName: "RouteMind",
+  },
 };
 
 interface LayoutProps {
-children:ReactNode
+  children: ReactNode;
 }
 
 export default function RootLayout({ children }: LayoutProps) {
@@ -28,9 +40,7 @@ export default function RootLayout({ children }: LayoutProps) {
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <LayoutWrapper>{children}</LayoutWrapper>
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

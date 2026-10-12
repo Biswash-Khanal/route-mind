@@ -61,6 +61,76 @@ In a classic SPA + Express world the same split exists: the SPA's route guard (`
 
 Equivalent in an SPA: `window.location.href = '/login'` after clearing the stored token.
 
+## Frontend
+
+### Route groups and page chrome
+
+Public and admin chrome are scoped with App Router **route groups** rather than by
+switching on `usePathname()` in a client component:
+
+| Group | Layout | Contains |
+|---|---|---|
+| `app/(public)/` | `layout.tsx` | `Navbar` + `main` + `Footer` |
+| `app/admin/(app)/` | `layout.tsx` | `AdminSidebar` + admin top bar |
+| `app/admin/login/` | — | Unauthenticated; renders without the shell |
+
+A layout receives no pathname, so the previous `LayoutWrapper` approach had to run
+on the client and re-evaluate on every navigation. Route groups scope chrome
+server-side instead. **Route groups are not part of the URL**, so `/`, `/admin`,
+`/admin/account` and friends keep their paths — and `proxy.ts`'s `/admin/:path*`
+matcher is unaffected, because it matches the request path, not the file tree.
+
+`/admin/login` sits *outside* the admin group so it does not render inside the
+authenticated shell.
+
+### What is live and what is sample data
+
+Most of the UI is currently a visual prototype fed by `shared/mock/`. **That whole
+directory is temporary and should be deleted once the corresponding endpoints land.**
+
+| Surface | Source | Replace when |
+|---|---|---|
+| Planner stops, results, operator cards | `shared/mock/*` | A routing endpoint returns `RouteOption` |
+| Admin dashboard, admins table, operators page | `shared/mock/*` | `GET /api/admin/users` and an admin operators `GET` exist |
+| Admin sidebar identity (name/role) | `CURRENT_ADMIN` constant | Read from `GET /api/admin/me` |
+| **Account: change username** | **live** — `PATCH /api/admin/me/username` | already implemented |
+| **Account: change password** | **live** — `POST /api/admin/me/password` | already implemented |
+| **Admin sign-in** | **live** — `POST /api/admin/auth/login` | already implemented |
+| Map panel | placeholder | A map engine is chosen |
+
+The two account forms are the exception: those endpoints are implemented, so the
+forms call them for real and validate with the same Zod schema the route handler
+uses. Screens fed by sample data say so on the page itself.
+
+Changing a password ends the session server-side (`clearAuthCookie`), so the form
+navigates to `/admin/login` on success — same reason `LogoutButton` re-navigates.
+
+### Styling
+
+Tailwind v4 with design tokens in `app/globals.css`:
+
+- **Roles**: `paper` (page background), `surface` (cards/inputs), `ink` (primary
+  text), `slate` (secondary text), `mist` (hairlines/hover), `stone` (disabled,
+  dashed). **Accents**: `transit-*` blue for transit, `walk-*` green for walking.
+- **Typography**: Inter for UI, JetBrains Mono for eyebrows, labels and figures.
+  `text-h1` … `text-caption` are registered in `@theme`; a Tailwind token may
+  **not** share a name with the raw token it points at (`--radius-md: var(--radius-md)`
+  is a circular reference and resolves to nothing).
+- **Component classes** (`@layer components`): `.card`, `.eyebrow`, `.input`,
+  `.select`, `.table-head`, `.table-cell`. Button variants live in
+  `app/components/ui/Button.tsx` so they stay next to their logic.
+
+### Reusable primitives — `app/components/ui/`
+
+`Button` (plus a `ButtonLink` twin sharing `buttonClasses`), `Card` (polymorphic via
+`as`), `Badge`, `Field`, and `utilities/cn.ts` for conditional class names.
+
+### Known gap
+
+The UI is built and reviewed at **desktop widths only**. There is no responsive
+breakpoint work yet — layouts use fixed multi-column grids and are not intended to
+be used on small screens until that pass happens.
+
 ### Why `callbackUrl` is sanitized
 
 `callbackUrl` is not a framework feature — it is a hand-attached search param read and trusted manually, so it must be validated manually. An attacker can craft `/admin/login?callbackUrl=https://evil.com` (or `//evil.com`, a protocol-relative URL). Without sanitization the browser would redirect to the attacker's origin after login — an **open redirect**. `sanitizeCallbackUrl` only accepts values that start with a single `/` and contains no backslashes preventing protocol-relative and backslash-normalized escapes, forcing the resolved URL onto our own origin.

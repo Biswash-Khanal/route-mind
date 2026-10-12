@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { MoveRightIcon } from "lucide-react";
 import { adminLoginSchema } from "@/shared/schemas/adminSchema";
 import { ApiEnvelope } from "@/shared/types/api";
 import { AdminLoginResponseData } from "@/app/api/admin/auth/login/route";
+import Button from "@/app/components/ui/Button";
+import Field from "@/app/components/ui/Field";
+import { cn } from "@/utilities/cn";
 
 // 2. Automatically generate the TypeScript type from the schema
 type LoginFormData = z.infer<typeof adminLoginSchema>;
@@ -42,6 +46,9 @@ const AdminLoginForm = ({ callbackUrl }: { callbackUrl: string }) => {
         return;
       }
 
+      // No refresh needed here: the response above has already set the
+      // auth cookie, so this navigation carries it and `proxy.ts` lets the
+      // request through.
       router.replace(callbackUrl);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -49,51 +56,40 @@ const AdminLoginForm = ({ callbackUrl }: { callbackUrl: string }) => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="w-full max-w-sm flex flex-col gap-4"
-    >
-      <div className="flex flex-col gap-1">
-        <label htmlFor="username" className="text-sm">
-          Username
-        </label>
+    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <Field id="username" label="Username" error={errors.username?.message}>
         <input
           id="username"
           type="text"
+          autoComplete="username"
+          autoFocus
+          aria-invalid={Boolean(errors.username)}
+          className={cn("input", errors.username && "input-invalid")}
           {...register("username")}
-          className="border rounded-md px-3 py-2"
         />
-        {/* 4. Display inline validation error if it exists */}
-        {errors.username && (
-          <p className="text-xs text-red-600">{errors.username.message}</p>
-        )}
-      </div>
+      </Field>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm">
-          Password
-        </label>
+      <Field id="password" label="Password" error={errors.password?.message}>
         <input
           id="password"
           type="password"
+          autoComplete="current-password"
+          aria-invalid={Boolean(errors.password)}
+          className={cn("input", errors.password && "input-invalid")}
           {...register("password")}
-          className="border rounded-md px-3 py-2"
         />
-        {/* 4. Display inline validation error if it exists */}
-        {errors.password && (
-          <p className="text-xs text-red-600">{errors.password.message}</p>
-        )}
-      </div>
+      </Field>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-small text-danger">
+          {error}
+        </p>
+      )}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="border text-sm px-10 py-2 rounded-md bg-ink text-paper disabled:opacity-50"
-      >
-        {isSubmitting ? "Logging in..." : "Login"}
-      </button>
+      <Button type="submit" size="lg" disabled={isSubmitting} className="mt-1">
+        {isSubmitting ? "Signing in…" : "Sign in"}
+        {!isSubmitting && <MoveRightIcon size={16} strokeWidth={1.5} />}
+      </Button>
     </form>
   );
 };

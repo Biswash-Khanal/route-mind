@@ -4,10 +4,15 @@
 :root {
   /* Color Palette Roles */
   --paper: #f7f6f2; /* Backgrounds, containers, surfaces */
+  --surface: #ffffff; /* Raised surfaces: cards, inputs, popovers */
   --ink: #1b1f24; /* Primary text, icons, headings */
   --slate: #4b5565; /* Secondary text, borders, dividers */
-  --mist: #e2e5e9; /* Subtle surfaces, hover states */
-  --stone: #c7ccd3; /* Disabled states, placeholders */
+  --mist: #e2e5e9; /* Subtle surfaces, hairline borders, hover states */
+  --stone: #c7ccd3; /* Disabled states, placeholders, dashed borders */
+
+  /* Feedback Roles */
+  --danger: #dc2626; /* Destructive actions, validation errors */
+  --danger-soft: #fdecec; /* Validation error background */
 
   /* Application Accents */
   --transit-500: #0b5fff;
@@ -40,12 +45,21 @@
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), monospace;
 
-  /* Global Theme Shortcuts */
+  /* Global Theme Shortcuts.
+     These deliberately reference the raw tokens above rather than repeating the
+     literals — one source of truth per role. Note that a Tailwind token may NOT
+     share a name with the raw token it points at (`--radius-md: var(--radius-md)`
+     is a circular reference and resolves to nothing), so raw values that are not
+     also referenced by hand live in this block directly. */
   --color-paper: var(--paper);
+  --color-surface: var(--surface);
   --color-ink: var(--ink);
   --color-slate: var(--slate);
   --color-mist: var(--mist);
   --color-stone: var(--stone);
+
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
 
   --color-transit-500: var(--transit-500);
   --color-transit-400: var(--transit-400);
@@ -55,13 +69,34 @@
   --color-walk-400: var(--walk-400);
   --color-walk-200: var(--walk-200);
 
-  /* Font Utilities */
-  --text-h1: var(--size-h1) / var(--lh-h1);
-  --text-h2: var(--size-h2) / var(--lh-h2);
-  --text-h3: var(--size-h3) / var(--lh-h3);
-  --text-body: var(--size-body) / var(--lh-body);
-  --text-small: var(--size-small) / var(--lh-small);
-  --text-caption: var(--size-caption) / var(--lh-caption);
+  /* Radii — raw values, exposed as rounded-* utilities */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Font Utilities.
+     `text-h1` etc. need the size and the leading declared separately: the
+     `--text-*--line-height` namespace modifier is what Tailwind reads to emit
+     the line-height alongside the size. A single `font-size / line-height`
+     shorthand inside a custom property is not valid CSS. */
+  --text-h1: var(--size-h1);
+  --text-h1--line-height: var(--lh-h1);
+
+  --text-h2: var(--size-h2);
+  --text-h2--line-height: var(--lh-h2);
+
+  --text-h3: var(--size-h3);
+  --text-h3--line-height: var(--lh-h3);
+
+  --text-body: var(--size-body);
+  --text-body--line-height: var(--lh-body);
+
+  --text-small: var(--size-small);
+  --text-small--line-height: var(--lh-small);
+
+  --text-caption: var(--size-caption);
+  --text-caption--line-height: var(--lh-caption);
 }
 
 /* 3. Base Styles Mapping System Roles */
@@ -112,7 +147,7 @@
     line-height: var(--lh-body);
     font-weight: 400;
     color: var(--slate);
-    letter-spacing: +0.04rem;
+    letter-spacing: 0;
     text-decoration-line: none;
   }
 
@@ -137,9 +172,8 @@
   }
 
   /* Global Borders & Dividers */
-  hr,
-  border-default {
-    border-color: var(--slate);
+  hr {
+    border-color: var(--mist);
   }
 
   /* Form Placeholders */
@@ -148,10 +182,12 @@
     opacity: 1;
   }
 
-  /* Disabled State Defaults */
+  /* Disabled State Defaults.
+     Opacity rather than `color`, so a disabled button keeps its own foreground
+     and simply recedes instead of inheriting an unreadable one. */
   :disabled,
   [disabled] {
-    color: var(--stone);
+    opacity: 0.5;
     cursor: not-allowed;
   }
 
@@ -168,5 +204,64 @@
   code,
   pre {
     font-family: var(--font-mono);
+  }
+
+  /* Visible keyboard focus everywhere, without doubling it on mouse clicks. */
+  :focus-visible {
+    outline: 2px solid var(--transit-500);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* 4. Component Classes.
+   Only patterns that repeat across many components. Button variants live in
+   `app/components/ui/Button.tsx` so they stay colocated with their logic. */
+@layer components {
+  /* Raised surface: white card on the warm paper page. */
+  .card {
+    @apply rounded-lg border border-mist bg-surface;
+  }
+
+  /* The recurring mono kicker used above headings and above cards. */
+  .eyebrow {
+    @apply font-mono text-caption font-medium tracking-[0.18em] uppercase text-slate;
+  }
+
+  /* Form controls. `focus` (not `focus-visible`) because a text field focused by
+     keyboard or by click should both show the ring. */
+  .input {
+    @apply w-full rounded-md border border-mist bg-surface px-3 py-2 text-body text-ink
+      transition-colors placeholder:text-stone
+      focus:border-transit-500 focus:ring-2 focus:ring-transit-200 focus:outline-none;
+  }
+
+  .input-invalid {
+    @apply border-danger bg-danger-soft focus:border-danger focus:ring-danger-soft;
+  }
+
+  /* Native <select> needs its own chevron since `appearance-none` strips it. */
+  .select {
+    @apply w-full appearance-none rounded-md border border-mist bg-surface pr-9 pl-3 py-2
+      text-body text-ink transition-colors
+      focus:border-transit-500 focus:ring-2 focus:ring-transit-200 focus:outline-none;
+  }
+
+  /* Data tables share one header/cell rhythm so columns line up by construction. */
+  .table-head {
+    @apply px-4 py-3 text-left font-mono text-caption font-medium tracking-[0.12em]
+      uppercase text-slate;
+  }
+
+  .table-cell {
+    @apply px-4 py-3 align-middle text-small text-ink;
   }
 }
