@@ -8,9 +8,6 @@ import {
   adminRegisterSchemaType,
 } from "@/shared/schemas/adminSchema";
 import { TursoDate } from "@/utilities/dateUtils";
-import jwt from "jsonwebtoken";
-import { env } from "@/env";
-import { NextRequest } from "next/server";
 import { AdminDetails, JwtAdminPayload } from "@/shared/types/admin";
 import { hashedPassword, verifyPassword } from "@/utilities/passwordUtils";
 import { Admin } from "@/database/types";
@@ -91,7 +88,8 @@ export interface LoggedInAdminWithToken {
 export async function loginAdmin(
   data: adminLoginSchemaType,
 ): Promise<LoggedInAdminWithToken> {
-  //username check: Check if the database contains an account with this username. If not, return Incorrect username, else continue
+  // Both the unknown-username and wrong-password branches return the same
+  // message. Distinguishing them would tell an attacker which usernames exist.
   const adminWithUsername = await db
     .selectFrom("admin")
     .selectAll()
@@ -108,7 +106,8 @@ export async function loginAdmin(
     adminWithUsername.password_hash,
   );
 
-  //if password not match, also throw the same vague error, if it does, we can continue
+  // Same generic error as above, so a wrong password is indistinguishable from
+  // an unknown account.
   if (!passwordMatch) {
     throw ApiError.unauthorized("Invalid username or password.");
   }
@@ -119,7 +118,6 @@ export async function loginAdmin(
     role: adminWithUsername.role,
   };
 
-  //generate an access token
   const access_token = signAdminToken(payload);
 
   return {
@@ -178,8 +176,7 @@ export async function changeAdminUsername(
     throw ApiError.conflict("Username already taken.");
   }
 
-  //username is unique, we can change it
-
+  // Uniqueness already checked above; `username` is safe to change.
   const now = TursoDate.toTurso(new Date());
   const updatedAdmin = await db
     .updateTable("admin")
@@ -254,11 +251,7 @@ export async function changeAdminPassword(
 export async function fetchAllAdmins(): Promise<AdminDetails[]> {
   const admins = await db.selectFrom("admin").selectAll().execute();
 
-  if (!admins) {
-    throw ApiError.unauthorized("No accounts found.");
-  }
-
-  //map the databse column name objects into camelcase ones matching our AdminDetails shape
+  // An empty table is a valid state, not an error — the caller gets `[]`.
   return admins.map(mapToAdminDetails);
 }
 //----------------------------------------------------------------------------------//
@@ -327,7 +320,8 @@ export async function deleteAdmin(
     throw ApiError.unauthorized("Admin account no longer exists.");
   }
 
-  //check if the admin's role is super admin, if it is, it cant be deleted
+  // Guard rail: without this, the last super-admin could be removed and the
+  // system left with nobody able to create another one.
   if (admin.role === "super-admin") {
     throw ApiError.forbidden("Super admin accounts cannot be deleted.");
   }

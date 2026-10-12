@@ -1,22 +1,21 @@
-import { Admin } from "@/database/types";
 import { deleteAdmin, fetchAdminDetails } from "@/services/adminService";
-import { AdminDetails, JwtAdminPayload } from "@/shared/types/admin";
+import { AdminDetails } from "@/shared/types/admin";
 import { successResponse } from "@/utilities/apiResponse";
 import { RouteHandlerContext, withErrorHandling } from "@/utilities/apiRoute";
 import { requireAdminAuth } from "@/utilities/authenticationWrappers";
 import { requireAdminRole } from "@/utilities/authorizationWrappers";
-import { NextRequest } from "next/server";
 
 type context = { id: string };
 
 export type AdminFetchByIdResponseData = AdminDetails;
+
+/** Super-admin only: reads another admin's record. */
 export const GET = withErrorHandling(
   requireAdminAuth(
     requireAdminRole(
       ["super-admin"],
-      async (_req, _adminPayload, context: RouteHandlerContext<context>) => {
-        //is a get request, that passes through authentication first, and then the authorization, if both success, we just return the admin tables
-        const { id } = await context.params;
+      async (_req, _adminPayload, ctx: RouteHandlerContext<context>) => {
+        const { id } = await ctx.params;
 
         const adminUser: AdminDetails = await fetchAdminDetails(id);
 
@@ -28,13 +27,17 @@ export const GET = withErrorHandling(
 
 export type AdminDeleteResponseData = AdminDetails;
 
+/**
+ * Super-admin only. `deleteAdmin` enforces the two rules the service cannot
+ * assume: a super-admin may not delete themselves, and a super-admin account
+ * may not be deleted at all.
+ */
 export const DELETE = withErrorHandling(
   requireAdminAuth(
     requireAdminRole(
       ["super-admin"],
-      async (_req, adminPayload, context: RouteHandlerContext<context>) => {
-        //is a get request, that passes through authentication first, and then the authorization, if both success, we just return the admin tables
-        const { id } = await context.params;
+      async (_req, adminPayload, ctx: RouteHandlerContext<context>) => {
+        const { id } = await ctx.params;
 
         const deletedAdminUser: AdminDetails = await deleteAdmin(
           adminPayload.id,

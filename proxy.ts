@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { ApiError } from "./shared/errors/apiError";
 import { errorResponse } from "./utilities/apiResponse";
 import { verifyAdminToken } from "./utilities/jwtUtils";
 import { sanitizeCallbackUrl } from "./utilities/callbackUrl";
@@ -11,7 +10,7 @@ export function proxy(request: NextRequest) {
 
   const adminToken = request.cookies.get("admin_access_token")?.value;
 
-  //if login page accessed when already logged in, go to the callback url if exists, else go to /admin
+  // Already signed in? Never show the login form — go where they were headed.
   if (pathname.startsWith("/admin/login")) {
     const decodedToken = adminToken ? verifyAdminToken(adminToken) : null;
 
@@ -31,41 +30,47 @@ export function proxy(request: NextRequest) {
     const decodedToken = adminToken ? verifyAdminToken(adminToken) : null;
 
     if (!decodedToken) {
-      // Redirect unauthenticated users
+      // Carry the intended destination through the login form so the user lands
+      // where they were trying to go rather than on the default page.
       const loginUrlWithCallback = new URL("/admin/login", request.url);
       loginUrlWithCallback.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrlWithCallback);
     }
   }
 
-  //for backend paths
+  // API namespace.
 
   if (
     pathname.startsWith("/api/admin") &&
     !pathname.startsWith("/api/admin/auth/login") &&
     !pathname.startsWith("/api/admin/auth/logout")
   ) {
-    //very basic check for token existence
+    // Cheap pre-check only. Token presence first, then a shape test (a JWT is
+    // three dot-separated parts). This is deliberately NOT cryptographic — the
+    // real verification is `requireAdminAuth` inside the route handler, which is
+    // the actual security boundary. This just avoids waking a handler for a
+    // request that was never going to authenticate.
     const hasToken = request.cookies.get("admin_access_token")?.value;
 
     if (!hasToken) {
       return errorResponse("Admin is not logged in.", 401, "UNAUTHORIZED");
-    } else {
-      //simple check for existing token's shape. We dont do the cryptographical verification in the edge middleware
-      if (hasToken.split(".").length !== 3) {
-        return errorResponse("Admin is not logged in.", 401, "UNAUTHORIZED");
-      }
+    }
+
+    if (hasToken.split(".").length !== 3) {
+      return errorResponse("Admin is not logged in.", 401, "UNAUTHORIZED");
     }
   }
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    //all frontend admin routes
+    // All admin pages.
     "/admin/:path*",
 
-    //all backend admin api routes, exclusions to be dealt with manually in the function body
+    // All admin API routes. Login/logout are excluded in the function body above,
+    // because they have to stay reachable while signed out.
     "/api/admin/:path*",
   ],
 };

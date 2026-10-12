@@ -5,12 +5,13 @@ import { ApiError } from "@/shared/errors/apiError";
 import { errorResponse } from "@/utilities/apiResponse";
 import { JsonWebTokenError } from "jsonwebtoken";
 
-//finally fixed this shit
-
-//This is a wrapper type for the context argument. Pass T= whatever the shape of the params: is expected to be
+/**
+ * Wrapper type for the context argument Next.js passes to a route handler.
+ * `T` is the shape of the dynamic segment params, e.g. `{ id: string }`.
+ */
 export type RouteHandlerContext<T> = { params: Promise<T> };
 
-//This is the type for a regular route handling function. Includes the generic type T which gets infered from the <T> part passed to the context's RouteHandlerContext's T
+/** A route handler body, before any auth or error wrapping is applied. */
 export type RouteHandler<T> = (
   req: NextRequest,
   context: RouteHandlerContext<T>,
@@ -94,7 +95,8 @@ export function withErrorHandling<T>(handler: RouteHandler<T>): RouteHandler<T> 
         return errorResponse("Malformed JSON body", 400, "BAD_JSON");
       }
 
-      //add the jsonwebtoken error, for errors concerning with the jwt token decoding
+      // A malformed or wrongly-signed token. Handled here so the caller gets a
+      // clean 401 rather than a raw jsonwebtoken error.
       if (error instanceof JsonWebTokenError) {
         return errorResponse(
           `JWT Error: ${error.message}`,

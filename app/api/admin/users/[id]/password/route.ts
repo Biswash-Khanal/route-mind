@@ -1,26 +1,31 @@
-import {
-  fetchAdminDetails,
-  fetchAllAdmins,
-  forceChangeAdminPassword,
-} from "@/services/adminService";
-import { ApiError } from "@/shared/errors/apiError";
+import { forceChangeAdminPassword } from "@/services/adminService";
 import { adminForcePasswordChangeSchema } from "@/shared/schemas/adminSchema";
 import { AdminDetails, JwtAdminPayload } from "@/shared/types/admin";
 import { successResponse } from "@/utilities/apiResponse";
 import { RouteHandlerContext, withErrorHandling } from "@/utilities/apiRoute";
 import { requireAdminAuth } from "@/utilities/authenticationWrappers";
 import { requireAdminRole } from "@/utilities/authorizationWrappers";
-import { NextRequest } from "next/server";
 import { AdminInformationChangeResponseData } from "../../../me/username/route";
 
 type context = { id: string };
 
+/**
+ * Super-admin-only. Sets a new password for another admin without knowing their
+ * current one, for recovering an account that is locked out.
+ *
+ * `forceChangeAdminPassword` refuses the case where the target is the caller, so
+ * a super-admin cannot use this route to bypass the old-password check on their
+ * own account.
+ */
 export const POST = withErrorHandling(
   requireAdminAuth(
     requireAdminRole(
       ["super-admin"],
-      async (req, adminPayload, context: RouteHandlerContext<context>) => {
-        //is a get request, that passes through authentication first, and then the authorization, if both success, we just return the admin tables
+      async (
+        req,
+        adminPayload: JwtAdminPayload,
+        context: RouteHandlerContext<context>,
+      ) => {
         const body = await req.json();
         const { id } = await context.params;
 
@@ -34,7 +39,7 @@ export const POST = withErrorHandling(
 
         return successResponse(
           adminUser as AdminInformationChangeResponseData,
-          "Admin Data successfully fetched.",
+          "Password reset successfully.",
         );
       },
     ),

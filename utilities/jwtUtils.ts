@@ -19,7 +19,9 @@ export function verifyAdminToken(token: string): JwtAdminPayload | null {
       JWT_SECRET,
     ) as JwtAdminPayload;
     return payload;
-  } catch (error) {
+  } catch {
+    // Expired, tampered with, or signed with a different secret — all
+    // indistinguishable to a caller and all mean the same thing: not signed in.
     return null;
   }
 }

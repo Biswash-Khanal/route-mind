@@ -1,13 +1,6 @@
-import {
-  createOperator,
-  deleteOperator,
-  updateOperator,
-} from "@/services/operatorService";
-import {
-  operatorCreateSchema,
-  operatorUpdateSchema,
-} from "@/shared/schemas/operatorSchema";
-import { createdResponse, successResponse } from "@/utilities/apiResponse";
+import { deleteOperator, updateOperator } from "@/services/operatorService";
+import { operatorUpdateSchema } from "@/shared/schemas/operatorSchema";
+import { successResponse } from "@/utilities/apiResponse";
 import { RouteHandlerContext, withErrorHandling } from "@/utilities/apiRoute";
 import { requireAdminAuth } from "@/utilities/authenticationWrappers";
 

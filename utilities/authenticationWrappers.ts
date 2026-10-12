@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { RouteHandler, RouteHandlerContext } from "./apiRoute";
 
-import jwt from "jsonwebtoken";
-import { env } from "@/env";
 import { ApiError } from "@/shared/errors/apiError";
 import { JwtAdminPayload } from "@/shared/types/admin";
 import { verifyAdminToken } from "./jwtUtils";

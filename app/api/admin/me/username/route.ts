@@ -5,7 +5,6 @@ import { successResponse } from "@/utilities/apiResponse";
 import { withErrorHandling } from "@/utilities/apiRoute";
 import { requireAdminAuth } from "@/utilities/authenticationWrappers";
 import { NextRequest } from "next/server";
-import z from "zod";
 
 export type AdminInformationChangeResponseData = AdminDetails;
 

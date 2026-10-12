@@ -1,4 +1,5 @@
-//this allows me to use this more common type at places where the avalibale roles selection is there
+// Single source of truth for the role set, so role comparisons and Zod enums
+// can never drift apart.
 export const AVAILABLE_ADMIN_ROLES = ["admin", "super-admin"] as const;
 
 export type AdminRoles = typeof AVAILABLE_ADMIN_ROLES;

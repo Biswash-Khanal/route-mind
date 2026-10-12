@@ -83,10 +83,9 @@ export async function updateOperator(
   id: string,
   data: OperatorUpdateSchemaType,
 ): Promise<OperatorDetails> {
-  //do the unique checks
-  //Both checks select the target row alongside any row holding the incoming value,
-  //so that renaming an operator to the name/license number it already owns is
-  //reported as a no-op conflict instead of colliding with itself.
+  // Both checks select the target row alongside any row holding the incoming
+  // value, so that renaming an operator to the name/license number it already
+  // owns is reported as a no-op conflict instead of colliding with itself.
   if (data.name !== undefined) {
     const newName = data.name;
 
